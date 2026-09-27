@@ -1,14 +1,32 @@
-# X Feed Pilot
+# X Feed Pilot (XFP)
+
+X Feed Pilot 是一款可以“操控“X推荐算法的工具。它能让你的“For You“ Timeline 遵循你指定的喜好标准推送内容。
+
+## Why do you need it?
+
+X 是最棒的信息源，它的推荐算法也很棒，就像 TikTok 一样，可以很好地识别用户的 pattern 并推送相关的内容，而且时效性很强，你能在第一时间刷到你感兴趣的内容。但驾驭这个信息源常遇到以下问题：
+1. 搜索不适合用于了解某个“话题/领域“：首先，X的搜索功能众所周知的烂。其次，搜索更适合检索一些具体内容，但你无法通过搜索实现“看看最近开发者都用Jev做什么应用“，你只会搜到一些已经极其热门的帖子或二手屎，比如专门做 AI 媒体的账号分享的“JEV的 101 个应用“
+2. ‘For You‘ Timeline 的效果受限于用户：我用X的第一天起就希望在X上浏览更多英文区的内容，但我的 Timeline 始终会有一半的中推，因为作为一个中国人，会不自觉地在中文内容上停留更久。大部分人的实际行为和理性大脑“想消费的内容“并不一致，比如刷到黄推你无法忍住不看。久而久之，X 会持续给你推荐这些内容，尽管理智告诉你，你想在 X 上看到的内容不是这些。
+
+而 X Feed Pilot 能让你可以自由地控制 X 推荐算法。比如它可以让你的 Timeline 减少中文 tweets 的推送、增加 new models 相关的 tweets 等等
+
+## How does XFP work?
+
+1. X Feed Pilot 会替代你在 X 上刷贴、搜索、点赞、停留等等，通过这些行为“告诉“X的推荐算法'Hey, pls push more contents like this'
+2. 你只需要告诉 XFP 你希望在 Timeline 上看到什么内容
+3. 不用害怕错失帖子，XFP 会把它看过的帖子都记录下来，并且标注它认为符合你要求的帖子，你可以在一个看板中查阅这些内容
+
+## How to implement it?
 
 本机单人版：Chrome 扩展在已登录的训练账号上运行有限时长的会话；本地服务调用 Jev、做图片文字 OCR，并把采集结果写入 SQLite；阅读页在另一个浏览器或 Chrome 配置中打开。
 
-## 环境
+### 环境
 
 - macOS、Google Chrome、Node.js 20+、Python 3、Clang 与 Apple Vision 框架
 - TypeSafe API key：在项目根目录的 `.env` 中配置 `TYPESAFE_API_KEY`，或使用同名环境变量
 - TypeScript 编译器 `tsc`。若未全局安装，先运行 `npm install`。
 
-## 启动
+### 启动
 
 1. 修改 [PREFERENCE.md](PREFERENCE.md) 和 [search-seeds.json](search-seeds.json)。前者在会话开始时固定版本；后者提供低浓度时的一轮搜索词。
 2. 复制 `.env.example` 为 `.env` 并填写 `TYPESAFE_API_KEY`，然后在项目目录运行 `npm run build` 和 `npm start`。也可不创建 `.env`，沿用 `TYPESAFE_API_KEY=你的密钥 npm start`。若 `.env` 和环境变量都配置了同一项，优先使用 `.env` 中的非空值。服务只监听 `127.0.0.1:47831`。
@@ -22,10 +40,10 @@
 
 扩展无需配对码。更新代码后重新运行 `npm run build`，在 `chrome://extensions` 中重新加载扩展，并重启本机服务。
 
-## 验证
+### 验证
 
 `npm test` 运行编译、OCR 编译及会话决策测试。真实 X 页面仍需在用户已登录的 Chrome 中手工验收，因为其 DOM 和账号状态不可由离线测试代替。
 
-## 约束
+### 约束
 
 Jev 只接收文字；Apple Vision 仅识别图片中的文字。纯视觉图片和无字幕视频若缺少配文，会标记为证据不足。X 官方规则禁止脚本操控网站和自动点赞，使用本工具可能导致训练账号受限；阅读延时不改变这一风险。

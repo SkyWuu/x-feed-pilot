@@ -1,0 +1,7 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="popup.css"><title>X Feed Pilot</title></head><body>
+<main><div class="eyebrow">LOCAL SESSION CONTROL</div><h1>X Feed Pilot</h1><p class="intro">按你的偏好，观察并训练推荐流。</p>
+<section class="status"><span class="dot" id="dot"></span><span id="status">检查服务中…</span></section>
+<div class="row controls"><button id="start" class="primary">开始会话</button><button id="stop">停止</button></div>
+<p class="hint">开始前请在当前 Chrome 标签页登录 X。采集时需让 Chrome 窗口和 X 训练标签页都保持在最前；切到其他 app 或标签页会暂停采集和计时，返回后自动继续。</p>
+<div class="divider"></div><strong>阅读记录</strong><p class="hint">请在登录另一个 X 账号的浏览器中打开：</p><code id="feed-url">http://127.0.0.1:47831/</code><button id="copy">复制地址</button>
+<p id="error" role="alert"></p></main><script src="popup.js"></script></body></html>

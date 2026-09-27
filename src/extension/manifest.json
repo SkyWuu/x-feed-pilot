@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "X Feed Pilot",
+  "version": "0.1.0",
+  "description": "A local, preference-driven X feed session pilot.",
+  "permissions": ["storage", "tabs", "scripting", "activeTab"],
+  "host_permissions": ["https://x.com/*", "https://www.x.com/*", "https://twitter.com/*", "https://www.twitter.com/*", "http://127.0.0.1:47831/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [{
+    "matches": ["https://x.com/*", "https://twitter.com/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+  "action": { "default_popup": "popup.html", "default_title": "X Feed Pilot" }
+}

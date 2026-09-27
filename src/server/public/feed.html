@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>X Feed Pilot · 阅读记录</title>
+  <link rel="stylesheet" href="/feed.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">X<span>↗</span></span><div><strong>Feed Pilot</strong><small>LOCAL READING LOG</small></div></div>
+      <nav aria-label="内容筛选">
+        <div class="nav-title">查看内容</div>
+        <button class="filter active" data-label="">全部记录 <span id="count-all">—</span></button>
+        <button class="filter" data-label="selected">精选 <span id="count-selected">—</span></button>
+        <button class="filter" data-label="ignored">忽略 <span id="count-ignored">—</span></button>
+        <button class="filter" data-label="insufficient">证据不足 <span id="count-insufficient">—</span></button>
+      </nav>
+      <div class="sidebar-foot"><span class="live-dot"></span> 数据仅保存在这台电脑<br><span>查看本页时训练会暂停；返回 X 训练页后继续</span></div>
+    </aside>
+    <main class="workspace">
+      <header class="topbar"><div><span class="eyebrow">SESSION ARCHIVE</span><h1>推荐流观察记录</h1><p>按照在 X 中出现的顺序，保留精选与忽略的每一条帖子。</p></div><button id="refresh" class="refresh">刷新记录 ↻</button></header>
+      <section class="overview" aria-label="记录概览">
+        <div class="metric"><span>已采集</span><strong id="metric-total">—</strong><small>条曝光记录</small></div>
+        <div class="metric selected"><span>精选</span><strong id="metric-selected">—</strong><small>符合各会话偏好</small></div>
+        <div class="metric ignored"><span>忽略</span><strong id="metric-ignored">—</strong><small>不在精选范围</small></div>
+        <div class="metric"><span>最近会话</span><strong id="metric-session">—</strong><small id="metric-reason">等待首次运行</small></div>
+      </section>
+      <div class="stream-toolbar"><div><h2>时间线</h2><span id="result-count">—</span></div><label for="source">来源 <select id="source"><option value="">全部</option><option value="for_you">For You</option><option value="search">主动搜索</option></select></label></div>
+      <div id="feed" class="feed" aria-live="polite"><div class="empty">正在读取本地记录…</div></div>
+      <button id="more" class="more" hidden>加载更多</button>
+    </main>
+  </div>
+  <script src="/feed.js"></script>
+  <script async src="https://platform.x.com/widgets.js" charset="utf-8"></script>
+</body>
+</html>

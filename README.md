@@ -1,49 +1,67 @@
 # X Feed Pilot (XFP)
 
-X Feed Pilot 是一款可以“操控“X推荐算法的工具。它能让你的“For You“ Timeline 遵循你指定的喜好标准推送内容。
+English | [简体中文](README_zh.md)
 
-## Why do you need it?
+X Feed Pilot lets you steer X's recommendation algorithm so your For You timeline reflects the topics you want to see.
 
-X 是最棒的信息源，它的推荐算法也很棒，就像 TikTok 一样，可以很好地识别用户的 pattern 并推送相关的内容，而且时效性很强，你能在第一时间刷到你感兴趣的内容。但驾驭这个信息源常遇到以下问题：
-1. 搜索不适合用于了解某个“话题/领域“：首先，X的搜索功能众所周知的烂。其次，搜索更适合检索一些具体内容，但你无法通过搜索实现“看看最近开发者都用Jev做什么应用“，你只会搜到一些已经极其热门的帖子或二手屎，比如专门做 AI 媒体的账号分享的“JEV的 101 个应用“
-2. ‘For You‘ Timeline 的效果受限于用户：我用X的第一天起就希望在X上浏览更多英文区的内容，但我的 Timeline 始终会有一半的中推，因为作为一个中国人，会不自觉地在中文内容上停留更久。大部分人的实际行为和理性大脑“想消费的内容“并不一致，比如刷到黄推你无法忍住不看。久而久之，X 会持续给你推荐这些内容，尽管理智告诉你，你想在 X 上看到的内容不是这些。
+## Why use it?
 
-而 X Feed Pilot 能让你可以自由地控制 X 推荐算法。比如它可以让你的 Timeline 减少中文 tweets 的推送、增加 new models 相关的 tweets 等等
+X is one of my favorite sources of information. Its recommendations pick up on what you spend time reading and surface timely posts, much like TikTok. But two things make it hard to use X for discovering topics:
+
+1. Search works poorly for exploring a field. It can find a specific post, but a search for what developers have built with Jev lately tends to return popular posts or secondhand summaries instead of a useful range of current work.
+2. Your For You timeline learns from what you do, which may differ from what you want to read. I wanted more posts from English-speaking accounts, yet about half my timeline stayed in Chinese because I spent longer on Chinese posts. The same thing happens when you linger on posts you would rather see less often. X keeps recommending them.
+
+X Feed Pilot gives you a way to push those recommendations toward your stated preferences, such as fewer Chinese-language posts or more posts about new models.
 
 ## How does XFP work?
 
-1. X Feed Pilot 会替代你在 X 上刷贴、搜索、点赞、停留等等，通过这些行为“告诉“X的推荐算法'Hey, pls push more contents like this'
-2. 你只需要告诉 XFP 你希望在 Timeline 上看到什么内容
-3. 不用害怕错失帖子，XFP 会把它看过的帖子都记录下来，并且标注它认为符合你要求的帖子，你可以在一个看板中查阅这些内容
+1. XFP browses, searches, reads, and interacts with posts on your behalf. Those actions give X's recommendation algorithm signals about the content you want to see.
+2. You describe what you want in your timeline.
+3. XFP saves the posts it encounters and marks the ones it judges relevant, so you can review them on a local reading page.
 
-## How to implement it?
+## Run it locally
 
-本机单人版：Chrome 扩展在已登录的训练账号上运行有限时长的会话；本地服务调用 Jev、做图片文字 OCR，并把采集结果写入 SQLite；阅读页在另一个浏览器或 Chrome 配置中打开。
+XFP is an early-stage macOS app. A Chrome extension uses an X account you have signed in to. A local service calls the Jev model to judge each post, then the extension acts on that judgment by skipping, reading, liking, or saving posts. Reading history stays on your computer.
 
-### 环境
+### Requirements
 
-- macOS、Google Chrome、Node.js 20+、Python 3、Clang 与 Apple Vision 框架
-- TypeSafe API key：在项目根目录的 `.env` 中配置 `TYPESAFE_API_KEY`，或使用同名环境变量
-- TypeScript 编译器 `tsc`。若未全局安装，先运行 `npm install`。
+- macOS, Google Chrome, Node.js 20+, Python 3, and Clang with access to Apple's Vision framework
+- A TypeSafe API key
+- An X account signed in through Chrome; a separate account is recommended for training
+- Your preferences in [PREFERENCE.md](PREFERENCE.md), which XFP uses to guide recommendations
+- Search terms in [search-seeds.json](search-seeds.json). If your timeline has no posts that match your preferences, XFP can search these terms to get started. You can ask an agent to draft the file after writing your preferences.
 
-### 启动
+From the project root, run:
 
-1. 修改 [PREFERENCE.md](PREFERENCE.md) 和 [search-seeds.json](search-seeds.json)。前者在会话开始时固定版本；后者提供低浓度时的一轮搜索词。
-2. 复制 `.env.example` 为 `.env` 并填写 `TYPESAFE_API_KEY`，然后在项目目录运行 `npm run build` 和 `npm start`。也可不创建 `.env`，沿用 `TYPESAFE_API_KEY=你的密钥 npm start`。若 `.env` 和环境变量都配置了同一项，优先使用 `.env` 中的非空值。服务只监听 `127.0.0.1:47831`。
-3. 在 Chrome 打开 `chrome://extensions`，开启开发者模式，选择“加载已解压的扩展程序”，目录为本项目的 `dist/extension`。
-4. 在训练账号的 Chrome 标签页登录 `x.com`；点扩展图标，再点“开始会话”。采集时需让 Chrome 窗口和 X 训练标签页都保持在最前。切到其他 app 或标签页时，采集与 10 分钟计时会暂停；返回训练页后自动继续。开始、停止均由用户手动触发。
-5. 在登录另一个 X 账号的浏览器中打开 `http://127.0.0.1:47831/` 查看记录。查看期间训练会暂停。页面调用 X 官方嵌入组件；失败时保留本地文字快照。
+```sh
+npm install
+cp .env.example .env
+# Add TYPESAFE_API_KEY to .env
+npm run build
+npm start
+```
 
-停止后重新开始会创建新会话。会话最多 10 分钟或 80 条，最多点赞 8 条、收藏 4 条。服务重新启动会停止上次未结束的会话。历史数据保存在 `data/pilot.sqlite`；此目录已被 Git 忽略。
+You can also provide the key through the `TYPESAFE_API_KEY` environment variable. A nonempty value in `.env` takes precedence. The local service listens on `127.0.0.1:47831`.
 
-采集时会先展开帖子的 `Show more` 正文；识别到 `Ad`、`Promoted`、`广告` 或 `推广` 标记的帖子会跳过，不进入 OCR、Jev 或阅读记录。帖子正文中的每个不同网页链接和 @提及账号会分别成为 Jev 可选的访问目标。模型每轮可以选一个未访问目标或结束探索；访问后会把页面文字作为证据再次判断，最多访问 4 次。X 帖子和账号页会在训练浏览器中真实打开；其他网页由本地服务检索公开的文字页面。最终判断决定是否打开原帖、探索作者、点赞或收藏。阅读记录会显示已访问的目标。
+### Use it
 
-扩展无需配对码。更新代码后重新运行 `npm run build`，在 `chrome://extensions` 中重新加载扩展，并重启本机服务。
+1. Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select `dist/extension/` from this project.
+2. Sign in to X in Chrome and open `x.com`. Click the extension icon, then **Start session**.
+3. **Keep the Chrome window and training tab in the foreground.** Collection and the session timer pause when you switch to another app or tab, then resume when you return. You can stop a session from the extension at any time.
+4. Open the [local reading page](http://127.0.0.1:47831/) in a browser or Chrome profile signed in to a different X account. Training pauses while you view the page and resumes when you return to the training tab.
 
-### 验证
+Each session runs for up to 10 minutes or 80 posts, with limits of 8 likes and 4 bookmarks. Starting again after stopping creates a new session. Restarting the service ends any unfinished session. Records are stored in `data/pilot.sqlite`, which Git ignores.
 
-`npm test` 运行编译、OCR 编译及会话决策测试。真实 X 页面仍需在用户已登录的 Chrome 中手工验收，因为其 DOM 和账号状态不可由离线测试代替。
+### How it's built
 
-### 约束
+- The [Chrome extension](src/extension/) reads the recommendation feed and search results, browses and interacts with posts, and pauses when the training tab loses focus.
+- The [local service](src/server/) manages sessions and action limits. It passes post text, image text extracted with Apple Vision, and content from links or mentioned accounts visited as needed to Jev to judge whether a post matches your preferences. It skips posts marked as ads.
+- The [reading page](src/server/public/) shows the records and judgments saved in SQLite. It uses X's embed widget to show the original post and falls back to a local text snapshot if the embed fails.
 
-Jev 只接收文字；Apple Vision 仅识别图片中的文字。纯视觉图片和无字幕视频若缺少配文，会标记为证据不足。X 官方规则禁止脚本操控网站和自动点赞，使用本工具可能导致训练账号受限；阅读延时不改变这一风险。
+### Contributing
+
+Run `npm test` to build the project and run the automated tests. After changing the extension, run `npm run build` again, reload it in `chrome://extensions`, and restart the local service. Changes to X page interactions also need manual testing in a signed-in Chrome session. When submitting a PR, describe the behavior change and test results; include screenshots for popup or reading-page changes.
+
+### Known limitations
+
+Jev works with text, and Apple Vision extracts text from images. Images without enough accompanying text and videos without captions may be marked as having insufficient evidence. XFP automates actions on X, including likes and bookmarks. This may violate X's rules and restrict the training account.

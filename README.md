@@ -6,10 +6,12 @@ X Feed Pilot lets you steer X's recommendation algorithm so your For You timelin
 
 ## Why use it?
 
-X is one of my favorite sources of information. Its recommendations pick up on what you spend time reading and surface timely posts, much like TikTok. But two things make it hard to use X for discovering topics:
+X is one of my favorite sources of information. Its recommendations pick up on what you spend time reading and surface timely posts, much like TikTok.
 
-1. Search works poorly for exploring a field. It can find a specific post, but a search for what developers have built with Jev lately tends to return popular posts or secondhand summaries instead of a useful range of current work.
-2. Your For You timeline learns from what you do, which may differ from what you want to read. I wanted more posts from English-speaking accounts, yet about half my timeline stayed in Chinese because I spent longer on Chinese posts. The same thing happens when you linger on posts you would rather see less often. X keeps recommending them.
+But two things make it hard to use X for discovering topics:
+
+1. **Search works poorly for exploring a field.** It can find a specific post, but a search for what developers have built with Jev lately tends to return popular posts or secondhand summaries instead of a useful range of current work.
+2. **Your For You timeline learns from what you do, which may differ from what you want to read.** I wanted more posts from English-speaking accounts, yet about half my timeline stayed in Chinese because I spent longer on Chinese posts. The same thing happens when you linger on posts you would rather see less often. X keeps recommending them.
 
 X Feed Pilot gives you a way to push those recommendations toward your stated preferences, such as fewer Chinese-language posts or more posts about new models.
 
@@ -18,6 +20,8 @@ X Feed Pilot gives you a way to push those recommendations toward your stated pr
 1. XFP browses, searches, reads, and interacts with posts on your behalf. Those actions give X's recommendation algorithm signals about the content you want to see.
 2. You describe what you want in your timeline.
 3. XFP saves the posts it encounters and marks the ones it judges relevant, so you can review them on a local reading page.
+
+
 
 ## Run it locally
 
@@ -57,6 +61,8 @@ Each session runs for up to 10 minutes or 80 posts, with limits of 8 likes and 4
 - The [Chrome extension](src/extension/) reads the recommendation feed and search results, browses and interacts with posts, and pauses when the training tab loses focus.
 - The [local service](src/server/) manages sessions and action limits. It passes post text, image text extracted with Apple Vision, and content from links or mentioned accounts visited as needed to Jev to judge whether a post matches your preferences. It skips posts marked as ads.
 - The [reading page](src/server/public/) shows the records and judgments saved in SQLite. It uses X's embed widget to show the original post and falls back to a local text snapshot if the embed fails.
+
+
 
 ### Contributing
 

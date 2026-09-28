@@ -29,5 +29,15 @@ test('SQLite records repeated observations and actual action results', () => {
     assert.equal(rows[0].exploration_steps[0].evidence,'Read the linked post');
     assert.equal(rows[0].label,'ignored');
     assert.deepEqual(call('counts'),{ignored:1});
+    call('save_session',{session:{id:'newer',startedAt:200,status:'active'}});
+    for (const [index, postId] of ['234567890123456','345678901234567'].entries()) {
+      call('add_observation',{...row,sessionId:'newer',post:{...post,postId,url:`https://x.com/a/status/${postId}`},now:201 + index});
+    }
+    const firstPage = call('feed',{source:null,label:null,limit:2,offset:0});
+    const secondPage = call('feed',{source:null,label:null,limit:2,offset:2});
+    assert.deepEqual(firstPage.map(item => item.session_id),['newer','newer']);
+    assert.deepEqual(firstPage.map(item => item.session_started_at),[200,200]);
+    assert.equal(secondPage[0].session_id,'s');
+    assert.equal(secondPage[0].session_started_at,0);
   } finally { rmSync(dir,{recursive:true,force:true}); }
 });

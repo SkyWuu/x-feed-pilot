@@ -85,7 +85,7 @@ elif op == 'update_observation_decision':
     cur = conn.execute('UPDATE observations SET label=?,judgments_json=?,plan_json=? WHERE seq=? AND session_id=?', (arg['label'], json.dumps(arg.get('judgments')), json.dumps(arg['plan']), arg['observationSeq'], arg['sessionId']))
     result = cur.rowcount == 1
 elif op == 'feed':
-    rows = conn.execute('''SELECT o.seq, o.session_id, o.source, o.query, o.label, o.snapshot_json, o.judgments_json,
+    rows = conn.execute('''SELECT o.seq, o.session_id, s.started_at AS session_started_at, o.source, o.query, o.label, o.snapshot_json, o.judgments_json,
       o.plan_json, o.ocr_text, o.seen_at, p.id AS post_id, p.url, p.author,
       p.body, p.has_video, p.promoted
       FROM observations o JOIN posts p ON o.post_id=p.id JOIN sessions s ON o.session_id=s.id

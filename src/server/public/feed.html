@@ -3,36 +3,49 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>X Feed Pilot · 阅读记录</title>
+  <title>X Feed Pilot · 阅读看板</title>
   <link rel="stylesheet" href="/feed.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">跳转到看板</a>
   <div class="shell">
-    <aside class="sidebar">
-      <div class="brand"><span class="brand-mark">X<span>↗</span></span><div><strong>Feed Pilot</strong><small>LOCAL READING LOG</small></div></div>
-      <nav aria-label="内容筛选">
-        <div class="nav-title">查看内容</div>
-        <button class="filter active" data-label="">全部记录 <span id="count-all">—</span></button>
-        <button class="filter" data-label="selected">精选 <span id="count-selected">—</span></button>
-        <button class="filter" data-label="ignored">忽略 <span id="count-ignored">—</span></button>
-        <button class="filter" data-label="insufficient">证据不足 <span id="count-insufficient">—</span></button>
+    <aside class="sidebar" aria-label="看板导航">
+      <div class="sidebar-head"><div class="brand"><span class="brand-mark" aria-hidden="true">X<span>↗</span></span><div><strong>Feed Pilot</strong><small>LOCAL READING DECK</small></div></div><button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-label="收起侧栏" aria-expanded="true" title="收起侧栏">‹</button></div>
+      <div class="sidebar-section">阅读看板</div>
+      <nav class="deck-nav" aria-label="跳转到分类列">
+        <button class="deck-link active" data-column="all" aria-current="true" title="全部记录"><span class="nav-icon all" aria-hidden="true">▥</span><span class="nav-label">全部记录</span><span class="nav-count" id="count-all">—</span></button>
+        <button class="deck-link" data-column="selected" title="精选"><span class="nav-icon selected" aria-hidden="true">✦</span><span class="nav-label">精选</span><span class="nav-count" id="count-selected">—</span></button>
+        <button class="deck-link" data-column="ignored" title="忽略"><span class="nav-icon ignored" aria-hidden="true">−</span><span class="nav-label">忽略</span><span class="nav-count" id="count-ignored">—</span></button>
+        <button class="deck-link" data-column="insufficient" title="证据不足"><span class="nav-icon insufficient" aria-hidden="true">?</span><span class="nav-label">证据不足</span><span class="nav-count" id="count-insufficient">—</span></button>
       </nav>
-      <div class="sidebar-foot"><span class="live-dot"></span> 数据仅保存在这台电脑<br><span>查看本页时训练会暂停；返回 X 训练页后继续</span></div>
+      <div class="sidebar-foot"><span class="live-dot" aria-hidden="true"></span>仅保存在这台电脑<br><span>查看看板时训练暂停，返回 X 训练页后继续。</span></div>
     </aside>
-    <main class="workspace">
-      <header class="topbar"><div><span class="eyebrow">SESSION ARCHIVE</span><h1>推荐流观察记录</h1><p>按照在 X 中出现的顺序，保留精选与忽略的每一条帖子。</p></div><button id="refresh" class="refresh">刷新记录 ↻</button></header>
-      <section class="overview" aria-label="记录概览">
-        <div class="metric"><span>已采集</span><strong id="metric-total">—</strong><small>条曝光记录</small></div>
-        <div class="metric selected"><span>精选</span><strong id="metric-selected">—</strong><small>符合各会话偏好</small></div>
-        <div class="metric ignored"><span>忽略</span><strong id="metric-ignored">—</strong><small>不在精选范围</small></div>
-        <div class="metric"><span>最近会话</span><strong id="metric-session">—</strong><small id="metric-reason">等待首次运行</small></div>
+    <main class="workspace" id="main-content">
+      <header class="topbar">
+        <div class="heading"><h1>推荐流观察记录</h1><p>最近会话 <span id="metric-session">—</span><span id="metric-reason"></span></p></div>
+        <div class="toolbar"><label for="source">来源 <select id="source"><option value="">全部来源</option><option value="for_you">For You</option><option value="search">主动搜索</option></select></label><button id="refresh" class="refresh" type="button"><span aria-hidden="true">↻</span> 刷新</button></div>
+      </header>
+      <section class="deck" aria-label="分类时间线，可横向滚动" tabindex="0">
+        <section class="column is-current" id="column-all" data-label="" aria-labelledby="title-all">
+          <header class="column-head"><div><span class="column-mark all" aria-hidden="true"></span><h2 id="title-all">全部记录</h2><span class="column-count" id="column-count-all">—</span></div><p>每次曝光，按出现顺序</p></header>
+          <div class="column-feed" id="feed-all" aria-live="polite"><div class="empty">正在读取本地记录…</div><div class="column-bottom" hidden><button class="more" data-label="all" type="button" hidden>加载更多</button></div></div>
+        </section>
+        <section class="column" id="column-selected" data-label="selected" aria-labelledby="title-selected">
+          <header class="column-head"><div><span class="column-mark selected" aria-hidden="true"></span><h2 id="title-selected">精选</h2><span class="column-count" id="column-count-selected">—</span></div><p>值得回看的帖子</p></header>
+          <div class="column-feed" id="feed-selected" aria-live="polite"><div class="empty">正在读取本地记录…</div><div class="column-bottom" hidden><button class="more" data-label="selected" type="button" hidden>加载更多</button></div></div>
+        </section>
+        <section class="column" id="column-ignored" data-label="ignored" aria-labelledby="title-ignored">
+          <header class="column-head"><div><span class="column-mark ignored" aria-hidden="true"></span><h2 id="title-ignored">忽略</h2><span class="column-count" id="column-count-ignored">—</span></div><p>已看过，未进入精选</p></header>
+          <div class="column-feed" id="feed-ignored" aria-live="polite"><div class="empty">正在读取本地记录…</div><div class="column-bottom" hidden><button class="more" data-label="ignored" type="button" hidden>加载更多</button></div></div>
+        </section>
+        <section class="column" id="column-insufficient" data-label="insufficient" aria-labelledby="title-insufficient">
+          <header class="column-head"><div><span class="column-mark insufficient" aria-hidden="true"></span><h2 id="title-insufficient">证据不足</h2><span class="column-count" id="column-count-insufficient">—</span></div><p>需要更多上下文的帖子</p></header>
+          <div class="column-feed" id="feed-insufficient" aria-live="polite"><div class="empty">正在读取本地记录…</div><div class="column-bottom" hidden><button class="more" data-label="insufficient" type="button" hidden>加载更多</button></div></div>
+        </section>
       </section>
-      <div class="stream-toolbar"><div><h2>时间线</h2><span id="result-count">—</span></div><label for="source">来源 <select id="source"><option value="">全部</option><option value="for_you">For You</option><option value="search">主动搜索</option></select></label></div>
-      <div id="feed" class="feed" aria-live="polite"><div class="empty">正在读取本地记录…</div></div>
-      <button id="more" class="more" hidden>加载更多</button>
     </main>
   </div>
   <script src="/feed.js"></script>
-  <script async src="https://platform.x.com/widgets.js" charset="utf-8"></script>
+  <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </body>
 </html>

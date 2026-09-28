@@ -32,8 +32,9 @@ button:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visib
 .sidebar { min-width: 0; background: var(--sidebar); border-right: 1px solid var(--line); padding: 14px 10px 12px; display: flex; flex-direction: column; }
 .sidebar-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .brand { display: flex; align-items: center; gap: 8px; padding: 2px 4px; min-width: 0; }
-.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; flex: none; background: var(--text); border-radius: var(--radius-md); color: var(--canvas); font-size: 19px; font-weight: 800; letter-spacing: -.13em; }
-.brand-mark span { color: var(--accent); font-size: 11px; transform: translateY(-5px); }
+.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; flex: none; background: var(--text); border-radius: var(--radius-md); color: var(--canvas); }
+.brand-mark svg { width: 21px; height: 21px; fill: currentColor; }
+.brand-mark .brand-check { fill: var(--accent); }
 .brand strong { display: block; font-size: 14px; font-weight: 750; letter-spacing: -.02em; }
 .brand small { display: block; margin-top: 2px; color: var(--subtle); font-size: 8px; font-weight: 800; letter-spacing: .13em; white-space: nowrap; }
 .sidebar-toggle { display: grid; place-items: center; flex: none; width: 28px; height: 32px; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--muted); font-size: 23px; cursor: pointer; }
@@ -144,7 +145,8 @@ button:active { transform: scale(.96); }
   .sidebar-toggle { display: none; }
   .brand { padding: 0 3px; }
   .sidebar-collapsed .brand > div, .sidebar-collapsed .nav-label { display: inline; }
-  .brand-mark { width: 30px; height: 30px; font-size: 16px; }
+  .brand-mark { width: 30px; height: 30px; }
+  .brand-mark svg { width: 17px; height: 17px; }
   .brand strong { font-size: 12px; }
   .brand small { font-size: 7px; }
   .sidebar-section, .sidebar-foot { display: none; }

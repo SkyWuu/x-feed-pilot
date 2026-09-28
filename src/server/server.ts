@@ -218,9 +218,9 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   if (req.method === 'GET' && url.pathname === '/api/counts') {
     json(res, 200, { counts: await db('counts') }); return;
   }
-  if (req.method === 'GET' && ['/', '/feed.css', '/feed.js'].includes(url.pathname)) {
+  if (req.method === 'GET' && ['/', '/feed.css', '/feed.js', '/favicon.svg'].includes(url.pathname)) {
     const file = url.pathname === '/' ? 'feed.html' : url.pathname.slice(1);
-    const mime = file.endsWith('.css') ? 'text/css' : file.endsWith('.js') ? 'text/javascript' : 'text/html';
+    const mime = file.endsWith('.css') ? 'text/css' : file.endsWith('.js') ? 'text/javascript' : file.endsWith('.svg') ? 'image/svg+xml' : 'text/html';
     res.writeHead(200, { 'content-type': `${mime}; charset=utf-8`, 'cache-control': 'no-store' });
     res.end(await readFile(join(PUBLIC, file))); return;
   }

@@ -61,7 +61,7 @@ async function refreshIndicator(): Promise<void> {
 
 async function send(type: string, data: Record<string, unknown> = {}): Promise<any> {
   const response = await chrome.runtime.sendMessage({ type, ...data });
-  if (!response?.ok) throw new Error(response?.error || '扩展通信失败');
+  if (!response?.ok) throw Object.assign(new Error(response?.error || '扩展通信失败'), { code: response?.code });
   return response.value;
 }
 function canonical(article: Element): { id: string; url: string } | null {
@@ -146,10 +146,26 @@ function postLinks(article: Element): { url: string; text: string }[] {
   }
   return Array.from(unique.values());
 }
-function visibleRects(article: Element): { x: number; y: number; width: number; height: number }[] {
-  const images = Array.from(article.querySelectorAll<HTMLImageElement>('[data-testid="tweetPhoto"] img, img[src*="pbs.twimg.com/media"]'));
-  return images.slice(0, 4).map(img => img.getBoundingClientRect()).filter(r => r.width > 20 && r.height > 20 && r.bottom > 0 && r.top < innerHeight)
-    .map(r => ({ x: r.x, y: r.y, width: r.width, height: r.height }));
+function postImages(article: Element, postId: string): { url: string; rect?: { x: number; y: number; width: number; height: number } }[] {
+  const found = new Map<string, { url: string; rect?: { x: number; y: number; width: number; height: number } }>();
+  for (const img of Array.from(article.querySelectorAll<HTMLImageElement>('[data-testid="tweetPhoto"] img'))) {
+    if (img.closest('article[data-testid="tweet"]') !== article ||
+        img.closest('[data-testid="card.wrapper"], [data-testid="videoPlayer"]')) continue;
+    // A photo permalink establishes ownership even when a quoted tweet shares this article.
+    const owner = img.closest<HTMLAnchorElement>('a[href*="/status/"]')?.href.match(/\/status\/(\d+)\/photo\/\d+(?:[?#]|$)/);
+    if (!owner || owner[1] !== postId) continue;
+    let url: URL;
+    try { url = new URL(img.currentSrc || img.src); } catch { continue; }
+    if (url.protocol !== 'https:' || url.hostname !== 'pbs.twimg.com' || !url.pathname.startsWith('/media/')) continue;
+    const identity = url.pathname;
+    if (found.has(identity)) continue;
+    url.searchParams.set('name', 'orig');
+    const r = img.getBoundingClientRect();
+    const visible = r.width > 20 && r.height > 20 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+    found.set(identity, { url: url.href, ...(visible ? { rect: { x: r.x, y: r.y, width: r.width, height: r.height } } : {}) });
+    if (found.size === 4) break;
+  }
+  return Array.from(found.values());
 }
 function promoted(article: Element): boolean {
   const adLabel = /^(?:ad|promoted|推广|广告)$/i;
@@ -169,15 +185,16 @@ async function extract(article: Element, source: 'for_you' | 'search', query?: s
   await expand(article);
   if (promoted(article)) return null;
   const text = (article.querySelector<HTMLElement>('[data-testid="tweetText"]')?.innerText || '').trim();
-  const imageRects = visibleRects(article);
+  const images = postImages(article, link.id);
+  const imageRects = images.flatMap(image => image.rect ? [image.rect] : []);
   let screenshot: string | undefined;
   if (imageRects.length) {
-    try { screenshot = (await send('SCREENSHOT')).screenshot; } catch { /* OCR evidence unavailable */ }
+    try { screenshot = (await send('SCREENSHOT')).screenshot; } catch { /* Full attachments may still be downloaded. */ }
   }
   return {
     postId: link.id, url: link.url, author: author(article), text, source, query,
     links: postLinks(article), mentions: postMentions(article),
-    imageRects, viewportWidth: innerWidth, viewportHeight: innerHeight,
+    images, imageRects, viewportWidth: innerWidth, viewportHeight: innerHeight,
     hasVideo: !!article.querySelector('video,[data-testid="videoPlayer"]'),
     promoted: promoted(article), screenshot,
   };
@@ -408,7 +425,10 @@ async function loop(): Promise<void> {
       seen.add(`${s.phase}:${post.postId}`);
       let response: any;
       try { response = await send('OBSERVE', { post }); }
-      catch { seen.delete(`${s.phase}:${post.postId}`); await sleep(1500); continue; }
+      catch (error) {
+        if ((error as { code?: string }).code !== 'decision_failed') seen.delete(`${s.phase}:${post.postId}`);
+        await sleep(1500); continue;
+      }
       let visitRounds = 0;
       while (response.plan.nextVisit && visitRounds++ < 20) {
         if (!(await canContinue(s.id))) break;

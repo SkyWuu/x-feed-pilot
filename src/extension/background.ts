@@ -12,7 +12,7 @@ async function request(path: string, method = 'GET', value?: unknown): Promise<a
     body: value === undefined ? undefined : JSON.stringify(value),
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+  if (!response.ok) throw Object.assign(new Error(data.error || `HTTP ${response.status}`), { code: data.code });
   return data;
 }
 async function waitForLoad(tabId: number): Promise<void> {
@@ -124,6 +124,6 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: (
     if (message.type === 'VISIT') return { visited: await visit(message.url, message.duration, message.profile) };
     if (message.type === 'VISIT_EVIDENCE') return await visitEvidence(message.url, message.duration, message.profile);
     throw new Error('Unknown message');
-  })().then(value => sendResponse({ ok: true, value })).catch(error => sendResponse({ ok: false, error: String(error) }));
+  })().then(value => sendResponse({ ok: true, value })).catch(error => sendResponse({ ok: false, error: String(error), code: error?.code }));
   return true;
 });

@@ -24,9 +24,9 @@ test('link and mention visits feed evidence into repeated decisions', async t =>
     const round = input.state.visited_pages?.length || 0;
     const high = round === 2;
     const answer = {
-      interest:{noul:1}, like:{noul:high ? 1 : .2},
-      bookmark:{noul:high ? 1 : .2}, exploreAuthor:{noul:1}, excluded:{noul:.01},
-      nextAction:{choice:round === 0 ? 'visit_2' : round === 1 ? 'visit_0' : 'finish'},
+      interest:{type:'noul',noul:1}, like:{type:'noul',noul:high ? 1 : .2},
+      bookmark:{type:'noul',noul:high ? 1 : .2}, exploreAuthor:{type:'noul',noul:1}, excluded:{type:'noul',noul:.01},
+      nextAction:{type:'choice',choice:round === 0 ? 'visit_2' : round === 1 ? 'visit_0' : 'finish'},
     };
     res.writeHead(200, {'content-type':'application/json'});
     res.end(JSON.stringify({answers:answer}));
@@ -36,7 +36,7 @@ test('link and mention visits feed evidence into repeated decisions', async t =>
   const port = await listen(free);
   await new Promise(resolve => free.close(resolve));
   const app = spawn(process.execPath, [new URL('../dist/server/server.js', import.meta.url).pathname], {
-    cwd:dir, env:{...process.env, PILOT_PORT:String(port), PILOT_JEV_ENDPOINT:`http://127.0.0.1:${jevPort}`, TYPESAFE_API_KEY:'test-key'},
+    cwd:dir, env:{...process.env, PILOT_PORT:String(port), PILOT_JEV_ENDPOINT:`http://127.0.0.1:${jevPort}`, TYPESAFE_API_KEY:'test-key',OPENAI_API_KEY:'test-openai-key'},
   });
   t.after(async () => { app.kill(); await new Promise(resolve => jev.close(resolve)); rmSync(dir,{recursive:true,force:true}); });
   let output = '';

@@ -18,7 +18,7 @@ export function newSession(id: string, preference: string, preferenceHash: strin
     preference, preferenceHash, queryIndex: 0, uniqueCount: 0,
     forYouCount: 0, forYouSelected: 0, forYouWindow: [], searchCount: 0,
     returnCount: 0, returnSelected: 0, returnWindow: [], likes: 0, bookmarks: 0,
-    authorVisits: 0, jevFailures: 0,
+    authorVisits: 0, decisionFailures: 0,
   };
 }
 
@@ -30,7 +30,7 @@ export function advanceSession(session: Session, now: number): Session {
   if (session.status !== 'active') return session;
   if (now - session.startedAt >= LIMITS.durationMs) return stopSession(session, 'time_limit');
   if (session.uniqueCount >= LIMITS.uniquePosts) return stopSession(session, 'post_limit');
-  if (session.jevFailures >= 3) return stopSession(session, 'jev_unavailable');
+  if ((session.decisionFailures ?? session.jevFailures ?? 0) >= 3) return stopSession(session, 'decision_unavailable');
   if (session.phase === 'for_you' &&
       now - session.phaseStartedAt >= LIMITS.initialMs &&
       session.forYouCount >= LIMITS.initialPosts &&
@@ -67,9 +67,10 @@ export function actionPlan(
   already: { liked: boolean; bookmarked: boolean },
   nextVisit?: FollowUpTarget,
   followUpText = '',
+  hasVisualEvidence = false,
 ): ActionPlan {
   const evidence = `${post.text} ${post.ocrText || ''} ${followUpText}`.trim();
-  const insufficient = (evidence.length < 8 && !nextVisit) || judgments === null;
+  const insufficient = (evidence.length < 8 && !nextVisit && !hasVisualEvidence) || judgments === null;
   const excluded = !insufficient && judgments!.excluded >= 0.75;
   const selected = !post.promoted && !insufficient && !excluded && judgments!.interest >= 0.70;
   const label = insufficient ? 'insufficient' : selected ? 'selected' : 'ignored';

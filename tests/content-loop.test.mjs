@@ -70,7 +70,7 @@ test('time spent away from the training tab does not consume the session', async
   const port = probe.address().port;
   await new Promise(resolve => probe.close(resolve));
   const app = spawn(process.execPath, [new URL('../dist/server/server.js', import.meta.url).pathname], {
-    cwd: dir, env: { ...process.env, PILOT_PORT: String(port), TYPESAFE_API_KEY: 'test-key' },
+    cwd: dir, env: { ...process.env, PILOT_PORT: String(port), TYPESAFE_API_KEY: 'test-key', OPENAI_API_KEY: 'test-openai-key' },
   });
   t.after(async () => {
     if (app.exitCode === null) {
@@ -107,4 +107,26 @@ test('time spent away from the training tab does not consume the session', async
   assert.equal(resumed.session.foregroundPaused, false);
   assert.ok(resumed.session.startedAt - initialStart >= 100);
   assert.equal((await api('/api/sessions')).sessions[0].foregroundPaused, false);
+});
+
+test('a model failure moves to the next Tweet without retrying or interacting',async()=>{
+  let checks=0;const observed=[];
+  const articles=['123456789012345','123456789012346'].map(id=>({
+    querySelector:selector=>selector==='time'?{closest:()=>({href:`https://x.com/a/status/${id}`})}:null,
+    querySelectorAll:()=>[],scrollIntoView:()=>{},
+  }));
+  const context={
+    chrome:{runtime:{sendMessage:async message=>{
+      if(message.type==='STATUS')return {ok:true,value:{session:{id:'s',status:checks++<2?'active':'stopped',phase:'for_you'}}};
+      if(message.type==='FOREGROUND')return {ok:true,value:{}};
+      if(message.type==='OBSERVE'){observed.push(message.post.postId);return {ok:false,error:'Model unavailable',code:'decision_failed'};}
+      throw new Error('Unexpected action '+message.type);
+    }}},
+    document:{hasFocus:()=>true,visibilityState:'visible',querySelectorAll:selector=>selector==='article[data-testid="tweet"]'?articles:[]},
+    location:{pathname:'/home'},innerWidth:1000,innerHeight:800,setTimeout:callback=>queueMicrotask(callback),window:{scrollBy:()=>{}},
+  };
+  const compiled=readFileSync(new URL('../dist/extension/content.js',import.meta.url),'utf8');
+  const startup=compiled.indexOf('if (/^\\/(home|search)/.test(location.pathname))');
+  await runInNewContext(compiled.slice(0,startup)+'\nloop()',context);
+  assert.deepEqual(observed,['123456789012345','123456789012346']);
 });

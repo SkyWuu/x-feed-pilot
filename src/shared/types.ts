@@ -9,6 +9,11 @@ export interface ImageRect {
   height: number;
 }
 
+export interface TweetImage {
+  url: string;
+  rect?: ImageRect;
+}
+
 export interface ObservedPost {
   postId: string;
   url: string;
@@ -17,6 +22,7 @@ export interface ObservedPost {
   source: Source;
   query?: string;
   imageRects: ImageRect[];
+  images?: TweetImage[];
   viewportWidth: number;
   viewportHeight: number;
   hasVideo: boolean;
@@ -79,6 +85,8 @@ export interface Session {
   likes: number;
   bookmarks: number;
   authorVisits: number;
-  jevFailures: number;
+  decisionFailures: number;
+  /** Stored sessions created before the shared decision router. */
+  jevFailures?: number;
   stopReason?: string;
 }

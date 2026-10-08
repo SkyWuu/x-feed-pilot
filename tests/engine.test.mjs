@@ -51,11 +51,19 @@ test('unique post budget differs from phase exposure counts', () => {
   assert.equal(returned.forYouCount, 1);
   assert.equal(returned.returnCount, 1);
   assert.equal(advanceSession({ ...returned, uniqueCount:80 }, 1000).stopReason, 'post_limit');
-  assert.equal(advanceSession({ ...returned, jevFailures:3 }, 1000).stopReason, 'jev_unavailable');
+  assert.equal(advanceSession({ ...returned, decisionFailures:3 }, 1000).stopReason, 'decision_unavailable');
 });
 
 test('a later low-relevance window triggers search despite an initially good feed', () => {
   let session = newSession('s','preference','hash',0);
   session = { ...session, forYouCount:40, forYouSelected:12, forYouWindow:[true,...Array(19).fill(false)] };
   assert.equal(advanceSession(session, 121_000).phase,'search');
+});
+
+test('successful visual judgment permits image-only posts, but missing visual evidence does not',()=>{
+  const session=newSession('s','preference','hash',0);const onlyImage={...post,text:''};
+  assert.equal(actionPlan(onlyImage,judgments,session,{liked:false,bookmarked:false},undefined,'',true).label,'selected');
+  assert.equal(actionPlan(onlyImage,judgments,session,{liked:false,bookmarked:false}).label,'insufficient');
+  assert.equal(actionPlan(onlyImage,null,session,{liked:false,bookmarked:false},undefined,'',true).label,'insufficient');
+  assert.equal(advanceSession({...session,decisionFailures:undefined,jevFailures:3},1000).stopReason,'decision_unavailable');
 });

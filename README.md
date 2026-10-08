@@ -25,12 +25,12 @@ X Feed Pilot gives you a way to push those recommendations toward your stated pr
 
 ## Run it locally
 
-XFP is an early-stage macOS app. A Chrome extension uses an X account you have signed in to. A local service calls the Jev model to judge each post, then the extension acts on that judgment by skipping, reading, liking, or saving posts. Reading history stays on your computer.
+XFP is an early-stage macOS app. A Chrome extension uses an X account you have signed in to. A local service uses Luna for posts with attached images and Jev for posts without images, then the extension acts on that judgment by skipping, reading, liking, or saving posts. Reading history stays on your computer.
 
 ### Requirements
 
 - macOS, Google Chrome, Node.js 20+, Python 3, and Clang with access to Apple's Vision framework
-- A TypeSafe API key
+- TypeSafe and OpenAI API keys
 - An X account signed in through Chrome; a separate account is recommended for training
 - Your preferences in [PREFERENCE.md](PREFERENCE.md), which XFP uses to guide recommendations
 - Search terms in [search-seeds.json](search-seeds.json). If your timeline has no posts that match your preferences, XFP can search these terms to get started. You can ask an agent to draft the file after writing your preferences.
@@ -40,12 +40,12 @@ From the project root, run:
 ```sh
 npm install
 cp .env.example .env
-# Add TYPESAFE_API_KEY to .env
+# Add TYPESAFE_API_KEY and OPENAI_API_KEY to .env
 npm run build
 npm start
 ```
 
-You can also provide the key through the `TYPESAFE_API_KEY` environment variable. A nonempty value in `.env` takes precedence. The local service listens on `127.0.0.1:47831`.
+You can also provide both keys through the `TYPESAFE_API_KEY` and `OPENAI_API_KEY` environment variables. Both are required to start a session. A nonempty value in `.env` takes precedence. The local service listens on `127.0.0.1:47831`.
 
 ### Use it
 
@@ -59,7 +59,7 @@ Each session runs for up to 10 minutes or 80 posts, with limits of 8 likes and 4
 ### How it's built
 
 - The [Chrome extension](src/extension/) reads the recommendation feed and search results, browses and interacts with posts, and pauses when the training tab loses focus.
-- The [local service](src/server/) manages sessions and action limits. It passes post text, image text extracted with Apple Vision, and content from links or mentioned accounts visited as needed to Jev to judge whether a post matches your preferences. It skips posts marked as ads.
+- The [local service](src/server/) manages sessions and action limits. It sends posts with their own attached images to OpenAI’s `gpt-6-luna` Decisions API, and posts without images to Jev. Both use your preferences and evidence from links or mentioned accounts visited as needed. Each decision makes one request, with a 15-second timeout, no retry, and no switching between models. Three consecutive failed decisions stop the session. It skips posts marked as ads.
 - The [reading page](src/server/public/) shows the records and judgments saved in SQLite. It uses X's embed widget to show the original post and falls back to a local text snapshot if the embed fails.
 
 
@@ -70,4 +70,4 @@ Run `npm test` to build the project and run the automated tests. After changing 
 
 ### Known limitations
 
-Jev works with text, and Apple Vision extracts text from images. Images without enough accompanying text and videos without captions may be marked as having insufficient evidence. XFP automates actions on X, including likes and bookmarks. This may violate X's rules and restrict the training account.
+Only the main post’s own images are evaluated; images inside quoted posts and video frames are excluded. Up to four full attachments are downloaded; if a download fails, the visible attachment is cropped from the existing screenshot and identified as potentially incomplete. If any attachment has neither a download nor a usable crop, the post is recorded as having insufficient evidence and skipped. Image bytes stay in memory only for the decision and follow-ups; temporary crop files are removed. Videos without captions may still lack sufficient evidence. XFP automates actions on X, including likes and bookmarks. This may violate X's rules and restrict the training account.

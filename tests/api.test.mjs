@@ -29,14 +29,14 @@ for (const keySource of ['environment', '.env']) test(`local service uses ${keyS
     assert.match(input.state.preference,/small language model/);
     assert.equal(Object.keys(input.questions).length,5);
     res.writeHead(200,{'content-type':'application/json'});
-    res.end(JSON.stringify({answers:{interest:{noul:1},like:{noul:1},bookmark:{noul:1},exploreAuthor:{noul:.3},excluded:{noul:.01}}}));
+    res.end(JSON.stringify({answers:{interest:{type:'noul',noul:1},like:{type:'noul',noul:1},bookmark:{type:'noul',noul:1},exploreAuthor:{type:'noul',noul:.3},excluded:{type:'noul',noul:.01}}}));
   });
   await new Promise(resolve => jev.listen(0,'127.0.0.1',resolve));
   const jevPort = jev.address().port;
   const port = await freePort();
   const app = spawn(process.execPath,[new URL('../dist/server/server.js',import.meta.url).pathname],{
     cwd:dir,
-    env:{...process.env,PILOT_PORT:String(port),PILOT_JEV_ENDPOINT:`http://127.0.0.1:${jevPort}`,TYPESAFE_API_KEY:'test-key'},
+    env:{...process.env,PILOT_PORT:String(port),PILOT_JEV_ENDPOINT:`http://127.0.0.1:${jevPort}`,TYPESAFE_API_KEY:'test-key',OPENAI_API_KEY:'test-openai-key'},
   });
   t.after(async () => { app.kill(); await new Promise(resolve => jev.close(resolve)); rmSync(dir,{recursive:true,force:true}); });
   let output = '';

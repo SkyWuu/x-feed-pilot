@@ -11,6 +11,8 @@ const columns = Object.fromEntries(columnKeys.map(key => [key, {
   loading: false,
   version: 0,
   controller: null,
+  entries: new Map(),
+  boundaries: new Map(),
 }]));
 
 function el(tag, className, value) {
@@ -35,9 +37,7 @@ function actions(row) {
   });
   return [...visits, ...(row.actual_actions || []).filter(item => item.success).map(item => labels[item.action]).filter(Boolean)];
 }
-function item(row) {
-  const entry = el('article', `entry ${row.label}`);
-  const card = el('div', 'entry-card');
+function entryHead(row) {
   const head = el('div', 'entry-head');
   const labels = { selected:'精选', ignored:'忽略', insufficient:'证据不足' };
   const sequence = el('span', 'sequence', `#${String(row.seq).padStart(4, '0')}`);
@@ -48,6 +48,9 @@ function item(row) {
   head.append(el('span', 'source', row.source === 'search' ? `主动搜索 · ${row.query || ''}` : 'For You'));
   const time = el('time', '', new Date(row.seen_at).toLocaleString('zh-CN'));
   head.append(time);
+  return head;
+}
+function entrySnapshot(row) {
   const snapshot = el('div', 'snapshot');
   snapshot.append(el('div', 'author', `@${row.author}`));
   const body = row.body || '这条帖子的可读文字不足。';
@@ -71,8 +74,19 @@ function item(row) {
     ocr.append(el('div', 'ocr-content', row.ocr_text));
     snapshot.append(ocr);
   }
+  return snapshot;
+}
+function entryActions(row) {
   const footer = el('div', 'entry-actions');
   for (const action of actions(row)) footer.append(el('span', 'action-chip', action));
+  return footer;
+}
+function item(row) {
+  const entry = el('article', `entry ${row.label}`);
+  const card = el('div', 'entry-card');
+  const head = entryHead(row);
+  const snapshot = entrySnapshot(row);
+  const footer = entryActions(row);
   const href = validUrl(row.url);
   const embed = el('div', 'embed-slot');
   const status = el('div', 'widget-status');
@@ -185,20 +199,77 @@ setTimeout(() => {
   }
 }, 8000);
 
-async function loadColumn(key, reset = false) {
+function updateEntry(record, row) {
+  const { entry, row: previous } = record;
+  if (JSON.stringify([previous.label, previous.seq, previous.source, previous.query, previous.seen_at]) !== JSON.stringify([row.label, row.seq, row.source, row.query, row.seen_at])) {
+    entry.classList.remove(previous.label);
+    entry.classList.add(row.label);
+    entry.querySelector('.entry-head').replaceWith(entryHead(row));
+  }
+  if (JSON.stringify([previous.author, previous.body, previous.ocr_text]) !== JSON.stringify([row.author, row.body, row.ocr_text])) {
+    const oldSnapshot = entry.querySelector('.snapshot');
+    const snapshot = entrySnapshot(row);
+    if (oldSnapshot.querySelector('.expand')?.getAttribute('aria-expanded') === 'true') snapshot.querySelector('.expand')?.click();
+    const ocr = snapshot.querySelector('.ocr');
+    if (ocr) ocr.open = oldSnapshot.querySelector('.ocr')?.open || false;
+    oldSnapshot.replaceWith(snapshot);
+  }
+  const nextActions = actions(row);
+  if (JSON.stringify(actions(previous)) !== JSON.stringify(nextActions)) entry.querySelector('.entry-actions').replaceWith(entryActions(row));
+  record.row = row;
+}
+function reconcileColumn(column, rows) {
+  const wanted = [];
+  const entries = new Map();
+  const boundaries = new Map();
+  let lastSessionId = null;
+  for (const row of rows) {
+    if (lastSessionId && lastSessionId !== row.session_id) {
+      const divider = column.boundaries.get(row.session_id) || sessionBoundary(row);
+      boundaries.set(row.session_id, divider);
+      wanted.push(divider);
+    }
+    let record = column.entries.get(row.seq);
+    if (record) updateEntry(record, row);
+    else record = { entry: item(row), row };
+    entries.set(row.seq, record);
+    wanted.push(record.entry);
+    lastSessionId = row.session_id;
+  }
+  for (const [seq, record] of column.entries) {
+    if (!entries.has(seq)) observer.unobserve(record.entry);
+  }
+  const keep = new Set([...wanted, column.bottom]);
+  for (const child of [...column.feed.children]) if (!keep.has(child)) child.remove();
+  // Leave retained nodes in place: moving a loaded iframe can reload its X widget.
+  let cursor = column.feed.firstElementChild;
+  for (const node of wanted) {
+    if (node === cursor) cursor = cursor.nextElementSibling;
+    else column.feed.insertBefore(node, cursor);
+  }
+  column.entries = entries;
+  column.boundaries = boundaries;
+  column.lastSessionId = lastSessionId;
+  if (!rows.length) column.feed.insertBefore(el('div', 'empty', source.value ? '此来源下暂无记录，试试其他来源。' : '这里还没有记录。启动一次会话后，采集的帖子会出现在此。'), column.bottom);
+}
+async function loadColumn(key, mode = 'more') {
   const column = columns[key];
-  if (reset) {
+  if (mode === 'more' && (column.loading || column.exhausted)) return;
+  if (mode !== 'more') {
     column.controller?.abort();
     column.version++;
+  }
+  const target = Math.max(20, column.offset);
+  if (mode === 'reset') {
+    for (const { entry } of column.entries.values()) observer.unobserve(entry);
+    column.entries.clear();
+    column.boundaries.clear();
     column.offset = 0;
     column.lastSessionId = null;
     column.exhausted = false;
     column.feed.replaceChildren(el('div', 'empty', '正在读取本地记录…'), column.bottom);
-    column.more.hidden = true;
-    column.bottom.hidden = true;
     column.feed.scrollTop = 0;
-  } else if (column.loading || column.exhausted) return;
-
+  }
   const version = column.version;
   const controller = new AbortController();
   column.controller = controller;
@@ -206,37 +277,42 @@ async function loadColumn(key, reset = false) {
   column.more.hidden = true;
   column.bottom.hidden = true;
   try {
-    const query = new URLSearchParams({ offset: String(column.offset), limit: '20' });
-    if (key !== 'all') query.set('label', key);
-    if (source.value) query.set('source', source.value);
-    const response = await fetch(`/api/feed?${query}`, { cache: 'no-store', signal: controller.signal });
-    if (!response.ok) throw new Error('读取失败');
-    const { items } = await response.json();
-    if (version !== column.version) return;
-    if (!column.offset) column.feed.replaceChildren(column.bottom);
-    for (const row of items) {
-      if (column.lastSessionId && column.lastSessionId !== row.session_id) column.feed.insertBefore(sessionBoundary(row), column.bottom);
-      column.feed.insertBefore(item(row), column.bottom);
-      column.lastSessionId = row.session_id;
-    }
-    column.offset += items.length;
-    column.exhausted = items.length < 20;
-    column.more.hidden = column.exhausted;
-    column.bottom.hidden = column.exhausted;
+    const rows = [];
+    let exhausted = false;
+    const refreshing = mode === 'refresh';
+    do {
+      const limit = refreshing ? Math.min(100, target - rows.length) : 20;
+      const query = new URLSearchParams({ offset: String(refreshing ? rows.length : column.offset), limit: String(limit) });
+      if (key !== 'all') query.set('label', key);
+      if (source.value) query.set('source', source.value);
+      const response = await fetch(`/api/feed?${query}`, { cache: 'no-store', signal: controller.signal });
+      if (!response.ok) throw new Error('读取失败');
+      const { items } = await response.json();
+      if (version !== column.version) return;
+      rows.push(...items);
+      exhausted = items.length < limit;
+    } while (refreshing && !exhausted && rows.length < target);
+    const allRows = mode === 'more' ? [...column.entries.values()].map(record => record.row).concat(rows) : rows;
+    reconcileColumn(column, allRows);
+    column.offset = allRows.length;
+    column.exhausted = exhausted;
+    column.more.hidden = exhausted;
+    column.bottom.hidden = exhausted;
     column.more.textContent = '加载更多';
-    if (!column.offset) column.feed.insertBefore(el('div', 'empty', source.value ? '此来源下暂无记录，试试其他来源。' : '这里还没有记录。启动一次会话后，采集的帖子会出现在此。'), column.bottom);
+    column.retryMode = null;
   } catch (error) {
     if (controller.signal.aborted || version !== column.version) return;
     if (!column.offset) column.feed.replaceChildren(el('div', 'empty', '无法读取本地服务，请检查服务是否运行。'), column.bottom);
-    column.more.textContent = '重试';
+    column.more.textContent = mode === 'more' ? '重试' : '刷新失败，点击重试';
     column.more.hidden = false;
     column.bottom.hidden = false;
+    column.retryMode = mode;
   } finally {
     if (version === column.version) column.loading = false;
   }
 }
-function refreshColumns() {
-  for (const key of columnKeys) loadColumn(key, true);
+function refreshColumns(reset = false) {
+  for (const key of columnKeys) loadColumn(key, reset ? 'reset' : 'refresh');
 }
 async function overview() {
   try {
@@ -283,9 +359,9 @@ document.querySelectorAll('.deck-link').forEach(button => button.addEventListene
   document.querySelectorAll('.column').forEach(column => column.classList.toggle('is-current', column.id === `column-${key}`));
   if (matchMedia('(min-width: 701px)').matches) document.getElementById(`column-${key}`).scrollIntoView({ block: 'nearest', inline: 'start', behavior: 'smooth' });
 }));
-source.addEventListener('change', () => { overview(); refreshColumns(); });
-document.querySelectorAll('.more').forEach(button => button.addEventListener('click', () => loadColumn(button.dataset.label)));
+source.addEventListener('change', () => { overview(); refreshColumns(true); });
+document.querySelectorAll('.more').forEach(button => button.addEventListener('click', () => loadColumn(button.dataset.label, columns[button.dataset.label].retryMode || 'more')));
 document.getElementById('refresh').addEventListener('click', () => { overview(); refreshColumns(); });
 overview();
-refreshColumns();
+refreshColumns(true);
 setInterval(overview, 5000);
